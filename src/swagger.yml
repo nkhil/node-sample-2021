@@ -1,0 +1,326 @@
+openapi: 3.0.0
+info:
+  title: Test
+  description: Test
+  version: 1.0.0
+servers:
+  - url: http://api.example.com/v1
+    description: Optional server description, e.g. Main (production) server
+  - url: http://staging-api.example.com
+    description: Optional server description, e.g. Internal staging server for testing
+paths:
+  /liveness:
+    get:
+      description: Returns the readiness of the service
+      operationId: ping
+      x-eov-operation-id: ping
+      x-eov-operation-handler: healthcheck
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: OK
+        "401":
+          $ref: "#/components/responses/401"
+        "404":
+          $ref: "#/components/responses/404"
+        "500":
+          $ref: "#/components/responses/500"
+components:
+  securitySchemes:
+    verifyApiKey:
+      type: apiKey
+      in: header
+      name: x-client-id
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    "401":
+      description: Unauthorised Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UnauthorisedError"
+    "404":
+      description: Not Found Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NotFoundError"
+    "500":
+      description: Server Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InternalServerError"
+    default:
+      description: Invalid Request Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InvalidRequestError"
+  parameters:
+    x-team-id:
+      name: x-team-id
+      description: team id for an existing team
+      in: header
+      required: true
+      schema:
+        type: string
+    x-correlation-id:
+      name: x-correlation-id
+      required: true
+      in: header
+      description: Correlation ID required for log tracing.
+      schema:
+        type: string
+        format: uuid
+    apiKey:
+      name: x-api-key
+      required: true
+      in: header
+      description: api key
+      schema:
+        type: string
+        additionalProperties: false
+    clientId:
+      name: x-client-id
+      required: true
+      description: API user ID
+      in: header
+      schema:
+        type: string
+    clientSecret:
+      name: x-client-secret
+      required: true
+      description: API user secret
+      in: header
+      schema:
+        type: string
+    teamName:
+      name: teamId
+      in: query
+      required: true
+      schema:
+        type: string
+        example: Team America
+  schemas:
+    getTokenResponse:
+      description: Get token response
+      type: object
+      additionalProperties: false
+      required:
+        - authToken
+      properties:
+        authToken:
+          type: string
+    getS3SignedUrlResponse:
+      description: S3 signed URL response
+      type: object
+      additionalProperties: false
+      required:
+        - signedRequest
+        - url
+      properties:
+        signedRequest:
+          type: string
+        url:
+          type: string
+    getApiKeyResponse:
+      description: new api key response
+      type: object
+      properties:
+        apiKey:
+          type: string
+          pattern: '[a-zA-Z0-9\b]{32}$' # This is set in constants
+    getTeamResponse:
+      $ref: "#/components/schemas/teamSchema"
+    getTeamsResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/teamSchema"
+    postLeaderboardSchema:
+      description: leaderboard schema
+      type: object
+      additionalProperties: false
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    postLeaderboardResponse:
+      description: post leaderboard response
+      $ref: "#/components/schemas/leaderboardSchema"
+    leaderboardSchema:
+      type: object
+      additionalProperties: true
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    postTeamSchema:
+      description: team schema
+      type: object
+      additionalProperties: false
+      required:
+        - teamName
+        - leaderboardId
+      properties:
+        teamName:
+          type: string
+        leaderboardId:
+          type: string
+    putTeamResponse:
+      $ref: "#/components/schemas/teamSchema"
+    putTeamSchema:
+      description: team schema
+      type: object
+      additionalProperties: false
+      properties:
+        teamName:
+          type: string
+    teamSchema:
+      description: team schema
+      type: object
+      additionalProperties: true
+      required:
+        - teamName
+        - leaderboardId
+      properties:
+        teamName:
+          type: string
+        teamId:
+          type: string
+        leaderboardId:
+          type: string
+    postScoreSchema:
+      description: Post body for team scores
+      type: object
+      required:
+        - scores
+      properties:
+        scores:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - teamId
+            properties:
+              teamId:
+                type: string
+              add:
+                type: number
+              subtract:
+                type: number
+    postScoreResponse:
+      description: post score response schema
+      type: array
+      items:
+        type: object
+        additionalProperties: true
+        required:
+          - id
+          - score
+          - teamName
+          - leaderboardId
+        properties:
+          id:
+            type: string
+          score:
+            type: number
+          teamName:
+            type: string
+          leaderboardId:
+            type: string
+    postUserSchema:
+      description: user schema
+      type: array
+      items:
+        type: object
+        required:
+          - firstName
+          - lastName
+          - email
+        properties:
+          firstName:
+            type: string
+          lastName:
+            type: string
+          email:
+            type: string
+          teamName:
+            type: string
+            nullable: true
+    userSchema:
+      description: user schema
+      type: object
+      properties:
+        userId:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        teamName:
+          type: string
+    healthCheckResponse:
+      description: healthcheck OK response
+      type: object
+      properties:
+        message:
+          type: string
+          enum:
+            - OK
+    NotFoundError:
+      title: Not Found Error
+      additionalProperties: false
+      required:
+        - message
+        - details
+      properties:
+        message:
+          type: string
+        details:
+          type: string
+    UnauthorisedError:
+      title: Not Found Error
+      additionalProperties: false
+      required:
+        - message
+        - details
+      properties:
+        message:
+          type: string
+        details:
+          type: string
+    InvalidRequestError:
+      additionalProperties: false
+      required:
+        - message
+        - details
+      properties:
+        message:
+          type: string
+        details:
+          type: string
+    InternalServerError:
+      title: Internal Server Error
+      required:
+        - message
+        - details
+      properties:
+        message:
+          type: string
+        details:
+          type: string
