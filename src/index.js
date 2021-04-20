@@ -21,23 +21,25 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-function init() {
-  app.use(
-    OpenApiValidator.middleware({
-      apiSpec,
-      validateResponses: true,
-      operationHandlers: path.join(__dirname),
-    }),
-  );
+app.use(
+  OpenApiValidator.middleware({
+    apiSpec,
+    validateResponses: true,
+    operationHandlers: path.join(__dirname),
+  }),
+);
 
-  app.use((err, req, res) => {
-    res.status(err.status || 500).json({
-      message: err.message,
-      errors: err.errors,
-    });
+app.use((err, req, res) => {
+  res.status(err.status || 500).json({
+    message: err.message,
+    errors: err.errors,
   });
+});
 
-  return app;
-}
+// return app;
 
-module.exports = init;
+// module.exports = init;
+const port = 8080;
+app.listen(port, () => {
+  console.log({ msg: `Scoring-api is listening on port ${port}` });
+});
